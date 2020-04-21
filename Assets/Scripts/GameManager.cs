@@ -17,7 +17,6 @@ public class GameManager : MonoBehaviour
     public List<GameObject> Spawners;
     public GameObject Player;
     public GameObject Enemy;
-    public Animator animator;
 
     public float GracePeriodLength = 30f;
     float GracePeriodTime;
@@ -49,7 +48,6 @@ public class GameManager : MonoBehaviour
         {
             case GameStage.ElevatorRaise:
 
-                animator.SetBool("Elevate", false);
                 GameFlow = GameStage.gracePeriod;
 
                 break;
