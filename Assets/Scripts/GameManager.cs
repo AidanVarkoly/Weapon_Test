@@ -4,7 +4,6 @@ using UnityEngine;
 
 public enum GameStage
 {
-    ElevatorRaise,
     gracePeriod,
     roundInProgress,
     roundOver
@@ -17,6 +16,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> Spawners;
     public GameObject Player;
     public GameObject Enemy;
+    public LightController[] lightController;
 
     public float GracePeriodLength = 30f;
     float GracePeriodTime;
@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        GameFlow = GameStage.ElevatorRaise;
+        GameFlow = GameStage.gracePeriod;
         EnenmiesLeft = EnenmyInRound;
         EnenmiesLeftToSpawn = EnenmyInRound;
         enemies = new List<GameObject>(EnenmyLimit);
@@ -46,11 +46,6 @@ public class GameManager : MonoBehaviour
     {
         switch (GameFlow)
         {
-            case GameStage.ElevatorRaise:
-
-                GameFlow = GameStage.gracePeriod;
-
-                break;
             case GameStage.gracePeriod:
                 if (!UIManager.roundInfoPanel.activeInHierarchy && (!UIManager.inspecting && !UIManager.SkillMenuActive))
                 {
@@ -71,6 +66,11 @@ public class GameManager : MonoBehaviour
 
                 if (firstWave)
                 {
+                    foreach (LightController light in lightController)
+                    {
+                        LightController.LockDown = true;
+                    }
+
                     for (int i = 0; i < EnemiesInFirstSpawn; i++)
                     {
                         SpawnEnemy();
