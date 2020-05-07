@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.SceneManagement;
 
 public enum GameStage
 {
@@ -11,12 +13,16 @@ public enum GameStage
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Managers")]
+    public UIManager uim;
+
     public static bool DebugMode = true;
     public GameStage GameFlow;
     public List<GameObject> Spawners;
     public GameObject Player;
-    public GameObject Enemy;
-    public LightController[] lightController;
+    public List<GameObject> Enemy;
+    public AudioSource Siren;
+
 
     public float GracePeriodLength = 30f;
     float GracePeriodTime;
@@ -29,7 +35,9 @@ public class GameManager : MonoBehaviour
     public int framesBetweenEnemies = 240; //Number of frames in between enemy spawns
     public int EnemySpawnFrames; //Number of frames before the next enemy can spawn
     public int EnemiesInFirstSpawn = 5; //Number of enemies in the first spawn
+    public bool PlayerSpotted = false; //Determine whether the player has been spotted
     static List<GameObject> enemies;
+    public LightController[] lightController;
 
     // Start is called before the first frame update
     void Start()
@@ -47,16 +55,16 @@ public class GameManager : MonoBehaviour
         switch (GameFlow)
         {
             case GameStage.gracePeriod:
-                if (!UIManager.roundInfoPanel.activeInHierarchy && (!UIManager.inspecting && !UIManager.SkillMenuActive))
+                if (!uim.roundInfoPanel.activeInHierarchy && (!uim.inspecting && !uim.SkillMenuActive))
                 {
-                    UIManager.roundInfoPanel.SetActive(true);
+                    uim.roundInfoPanel.SetActive(true);
                 }
                 GracePeriodTime -= Time.deltaTime;
-                UIManager.updateRoundCountdown(GracePeriodTime);
+                uim.updateRoundCountdown(GracePeriodTime);
 
                 if (GracePeriodTime <= 0f)
                 {
-                    UIManager.updateRoundEnemies(EnenmiesLeft);
+                    uim.updateRoundEnemies(EnenmiesLeft);
                     firstWave = true;
                     GameFlow = GameStage.roundInProgress;
                 }
@@ -66,11 +74,6 @@ public class GameManager : MonoBehaviour
 
                 if (firstWave)
                 {
-                    foreach (LightController light in lightController)
-                    {
-                        LightController.LockDown = true;
-                    }
-
                     for (int i = 0; i < EnemiesInFirstSpawn; i++)
                     {
                         SpawnEnemy();
@@ -96,9 +99,16 @@ public class GameManager : MonoBehaviour
                 if (firstWave) firstWave = false;
                 break;
             case GameStage.roundOver:
-                UIManager.updateRoundResult("You Win!");
+                uim.updateRoundResult("You Win!");
+                StartCoroutine("LoadScene");
                 break;
         }
+    }
+
+    public IEnumerator LoadScene()
+    {
+        yield return new WaitForSeconds(5);
+        SceneManager.LoadScene("Main Menu");
     }
 
     GameObject FindBestSpawner()
@@ -133,25 +143,64 @@ public class GameManager : MonoBehaviour
 
     void SpawnEnemy()
     {
+        int whichEnemy = (Random.Range(0, Enemy.Count));
         GameObject spawnPoint = FindBestSpawner();
-        GameObject tempEnemy = Instantiate<GameObject>(Enemy);
-        tempEnemy.transform.position = new Vector3(spawnPoint.transform.position.x, 0.89f, spawnPoint.transform.position.z);
+        GameObject tempEnemy;
+
+        Vector3 temp = new Vector3(spawnPoint.transform.position.x, spawnPoint.transform.position.y, spawnPoint.transform.position.z);
+        if (whichEnemy == 0)
+        {
+            tempEnemy = Instantiate<GameObject>(Enemy[0], temp, Quaternion.identity);
+        }
+        else if (whichEnemy == 1)
+        {
+            tempEnemy = Instantiate<GameObject>(Enemy[1], temp, Quaternion.identity);
+        }
+        else
+        {
+            tempEnemy = Instantiate<GameObject>(Enemy[2], temp, Quaternion.identity);
+        }
+        //tempEnemy.transform.position = new Vector3(spawnPoint.transform.position.x, spawnPoint.transform.position.y, spawnPoint.transform.position.z);
+        //tempEnemy.GetComponent<Enemy>().Ground();
         enemies.Add(tempEnemy);
         EnenmiesLeftToSpawn--;
     }
 
-    public static void RemoveEnemy(GameObject enemyToBeRemoved)
+    public void RemoveEnemy(GameObject enemyToBeRemoved)
     {
         enemies.Remove(enemyToBeRemoved);
         Destroy(enemyToBeRemoved);
         EnenmiesLeft--;
-        UIManager.updateRoundEnemies(EnenmiesLeft);
+        uim.updateRoundEnemies(EnenmiesLeft);
         if (EnenmiesLeft == 0)
         {
             foreach (GameObject go in enemies)
             {
                 Destroy(go);//need to limit spawns when getting close to end
             }
+        }
+    }
+
+    public void CodeRed()
+    {
+        foreach (LightController light in lightController)
+        {
+            LightController.LockDown = true;
+        }
+    }
+
+    public bool getIfSeen()
+    {
+        return PlayerSpotted;
+    }
+
+    public void setIfSeen(bool s)
+    {
+        PlayerSpotted = s;
+        if(s)
+        {
+            CodeRed();
+            Siren.Play();
         }
     }
 }

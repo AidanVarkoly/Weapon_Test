@@ -36,7 +36,7 @@ public class HellwailerProjectile : MonoBehaviour
             {
                 if(col.gameObject.layer == 9)
                 {
-                    col.gameObject.GetComponent<TestEnemy>().takeDamage(5);
+                    col.gameObject.GetComponent<Enemy>().takeDamage(5);
                 }
             }
             Destroy(transform.gameObject);

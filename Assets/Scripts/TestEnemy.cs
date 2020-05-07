@@ -5,6 +5,11 @@ using UnityEngine.AI;
 
 public class TestEnemy : MonoBehaviour
 {
+    [Header("Managers")]
+    public UIManager uim;
+    public GameManager gm;
+    public SkillManager sm;
+
     public GameObject Player;
 
     public Material normal;
@@ -29,6 +34,22 @@ public class TestEnemy : MonoBehaviour
 
     public Transform destination;
     NavMeshAgent navMeshAgent;
+
+    void Awake()
+    {
+        if (uim == null)
+        {
+            uim = GameObject.Find("MainCanvas").GetComponent<UIManager>();
+        }
+        if (gm == null)
+        {
+            gm = GameObject.Find("Game Manager").GetComponent<GameManager>();
+        }
+        if (sm == null)
+        {
+            sm = GameObject.Find("Game Manager").GetComponent<SkillManager>();
+        }
+    }
 
     void Start()
     {
@@ -79,7 +100,7 @@ public class TestEnemy : MonoBehaviour
             {
                 _Time = 0f;
                 isDissolving = false;
-                GameManager.RemoveEnemy(transform.gameObject);
+                gm.RemoveEnemy(transform.gameObject);
             }
             Death.SetFloat("Time", _Time);
         }
@@ -109,8 +130,8 @@ public class TestEnemy : MonoBehaviour
             MR.material = Death;
             isDissolving = true;
             //GameManager.RemoveEnemy(transform.gameObject);
-            UIManager.updateScore(5);
-            SkillManager.grantXP(1);
+            uim.updateScore(5);
+            sm.grantXP(1);
         }
     }
 

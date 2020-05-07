@@ -4,28 +4,31 @@ using UnityEngine;
 
 public class SkillManager : MonoBehaviour
 {
-    public static int XP = 0;
-    public static int SkillPoints = 0;
-    public static int XPToLevelUP = 5;
+    [Header("Managers")]
+    public UIManager uim;
 
-    public static float fireRateBoost = 0f;
-    public static int MoveSpeedBoost = 0;
-    public static int damageBoost = 0;
-    public static int HealthBoost = 0;
+    public int XP = 0;
+    public int SkillPoints = 0;
+    public int XPToLevelUP = 5;
+
+    public float fireRateBoost = 0f;
+    public int MoveSpeedBoost = 0;
+    public int damageBoost = 0;
+    public int HealthBoost = 0;
 
 
-    public static void grantXP(int xpToGrant)
+    public void grantXP(int xpToGrant)
     {
         XP += xpToGrant;
         if (XP == XPToLevelUP)
         {
             XP -= 4;
             SkillPoints++;
-            UIManager.updateSkillPointIndicator(SkillPoints);
+            //uim.updateSkillPointIndicator(SkillPoints);
         }
     }
 
-    public static void grantFireRateBoost()
+    public void grantFireRateBoost()
     {
         if (fireRateBoost == 0f && SkillPoints >= 1)
         {
@@ -37,7 +40,7 @@ public class SkillManager : MonoBehaviour
             fireRateBoost = 0f;
         }
     }
-    public static void grantMoveSpeedBoost()
+    public void grantMoveSpeedBoost()
     {
         if (MoveSpeedBoost == 0 && SkillPoints >= 1)
         {
@@ -49,7 +52,7 @@ public class SkillManager : MonoBehaviour
             MoveSpeedBoost = 0;
         }
     }
-    public static void grantDamageBoost()
+    public void grantDamageBoost()
     {
         if (damageBoost == 0 && SkillPoints >= 1)
         {
@@ -61,7 +64,7 @@ public class SkillManager : MonoBehaviour
             damageBoost = 0;
         }
     }
-    public static void grantHealthBoost()
+    public void grantHealthBoost()
     {
         if (HealthBoost == 0f && SkillPoints >= 1)
         {

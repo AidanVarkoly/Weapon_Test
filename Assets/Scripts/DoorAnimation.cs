@@ -27,7 +27,7 @@ public class DoorAnimation : MonoBehaviour
 
     public void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" || other.gameObject.tag == "Enemy")
         {
             open = true;
         }
@@ -36,7 +36,7 @@ public class DoorAnimation : MonoBehaviour
 
     public void OnTriggerStay(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" || other.gameObject.tag == "Enemy")
         {
             open = true;
         }
@@ -44,7 +44,7 @@ public class DoorAnimation : MonoBehaviour
 
     public void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" || other.gameObject.tag == "Enemy")
         {
             open = false;
         }

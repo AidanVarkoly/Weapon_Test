@@ -4,7 +4,12 @@ using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
+    [Header("Managers")]
+    public UIManager uim;
+    public SkillManager sm;
+
     public bool debugMode = false;
+    public bool forPlayer = true;
 
     public Animator WeaponAnimator;
 
@@ -32,8 +37,8 @@ public class Weapon : MonoBehaviour
     int max_rounds_per_mag;
     int currentRoundsInMag;
 
-    int maxAmmo;
-    int currentAmmo;
+    public int maxAmmo;
+    public int currentAmmo;
 
     private AudioSource weaponSound;
 
@@ -70,6 +75,15 @@ public class Weapon : MonoBehaviour
 
     void Start()
     {
+        if (uim == null)
+        {
+            uim = GameObject.Find("MainCanvas").GetComponent<UIManager>();
+        }
+        if (sm == null)
+        {
+            sm = GameObject.Find("Game Manager").GetComponent<SkillManager>();
+        }
+
         updateAttachments();
         CalculateStats();
 
@@ -94,6 +108,11 @@ public class Weapon : MonoBehaviour
 
     private void OnValidate()
     {
+        if (uim == null)
+        {
+            uim = GameObject.Find("MainCanvas").GetComponent<UIManager>();
+        }
+
         updateAttachments();
         CalculateStats();
     }
@@ -101,58 +120,78 @@ public class Weapon : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!statsComputed)
+        if (forPlayer)
         {
-            updateAttachments();
-            CalculateStats();
-        }
-
-        if (NextTimeToFire > Time.time + 1000f)
-        {
-            NextTimeToFire = 0;
-        }
-
-        if (WeaponAnimator.GetBool("firing") && !WeaponAnimator.GetCurrentAnimatorStateInfo(0).IsName("fire"))
-        {
-            WeaponAnimator.SetBool("firing", false);
-        }
-
-        //Inspect
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            Inspect();
-        }
-
-        if (Input.GetButton("Fire1") && Time.time >= NextTimeToFire)
-        {
-            NextTimeToFire = Time.time + FireRate;
-            if (currentRoundsInMag != 0)
+            if (!statsComputed)
             {
-                FireWeapon();
+                updateAttachments();
+                CalculateStats();
             }
-            else
+
+            if (NextTimeToFire > Time.time + 1000f)
+            {
+                NextTimeToFire = 0;
+                MuzzleFlash.Play();
+            }
+
+            if (WeaponAnimator.GetBool("firing") && !WeaponAnimator.GetCurrentAnimatorStateInfo(0).IsName("fire"))
+            {
+                WeaponAnimator.SetBool("firing", false);
+            }
+
+            //Inspect
+            if (Input.GetKeyDown(KeyCode.V))
+            {
+                Inspect();
+            }
+            if (!uim.SkillMenuActive)
+            {
+                if (Input.GetButton("Fire1") && Time.time >= NextTimeToFire)
+                {
+                    NextTimeToFire = Time.time + FireRate;
+                    if (currentRoundsInMag != 0)
+                    {
+                        FireWeapon();
+                    }
+                    else
+                    {
+                        Reload();
+                    }
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.R) && !WeaponAnimator.GetBool("reloading"))
             {
                 Reload();
+                if (WeaponAnimator.GetInteger("Weapon") == 4)
+                {
+                    SBLightsController sblc = GetComponent<SBLightsController>();
+                    sblc.StartReloadTimers();
+                }
             }
-        }
-
-        if (Input.GetKeyDown(KeyCode.R) && !WeaponAnimator.GetBool("reloading"))
-        {
-            Reload();
-            if (WeaponAnimator.GetInteger("Weapon") == 4)
+            else if (WeaponAnimator.GetBool("reloading") && Time.time >= TimeToAddAmmo)
             {
-                SBLightsController sblc = GetComponent<SBLightsController>();
-                sblc.StartReloadTimers();
+                ChangeMagazineAmmo(0);
+                WeaponAnimator.SetBool("reloading", false);
             }
-        }
-        else if (WeaponAnimator.GetBool("reloading") && Time.time >= TimeToAddAmmo)
-        {
-            ChangeMagazineAmmo(0);
-            WeaponAnimator.SetBool("reloading", false);
         }
     }
 
+    public void fillAmmo()
+    {
+        currentAmmo = maxAmmo;
+        updateAmmoUI();
+    }
 
+    public void updateAmmoUI()
+    {
+        uim.updateAmmoCounter(currentRoundsInMag, currentAmmo);
+    }
+
+    public bool atMaxAmmo()
+    {
+        return currentAmmo < maxAmmo;
+    }
 
     void ChangeMagazineAmmo(int delta = -1)
     {
@@ -175,7 +214,7 @@ public class Weapon : MonoBehaviour
                 currentAmmo = 0;
             }
         }
-        UIManager.updateAmmoCounter(currentRoundsInMag, MagazineCapacity, currentAmmo);
+        updateAmmoUI();
     }
 
     void CalculateStats()
@@ -257,25 +296,25 @@ public class Weapon : MonoBehaviour
 
     void Inspect()
     {
-        UIManager.toggleInspectUI();
+        uim.toggleInspectUI();
         WeaponAnimator.SetBool("inspecting", !WeaponAnimator.GetBool("inspecting"));
         if (WeaponAnimator.GetBool("inspecting")) return;
         switch (AttachedBarrel)
         {
             case Barrels.LongBarrel:
-                UIManager.updateBarrekCyclerPOS(Barrel.transform.position);
+                uim.updateBarrekCyclerPOS(Barrel.transform.position);
                 break;
             case Barrels.ShortBarrel:
-                UIManager.updateBarrekCyclerPOS(BarrelAlt1.transform.position);
+                uim.updateBarrekCyclerPOS(BarrelAlt1.transform.position);
                 break;
         }
         switch (AttachedGrip)
         {
             case Grips.RoundGrip:
-                UIManager.updateGripCyclerPOS(Grip.transform.position);
+                uim.updateGripCyclerPOS(Grip.transform.position);
                 break;
             case Grips.StraightGrip:
-                UIManager.updateGripCyclerPOS(GripAlt1.transform.position);
+                uim.updateGripCyclerPOS(GripAlt1.transform.position);
                 break;
         }
     }
@@ -396,14 +435,14 @@ public class Weapon : MonoBehaviour
                 Debug.DrawLine(transform.position, hit.point, Color.red, 2); //Draw a black line in the SCENE view between the current weapon position and the position of the point the raycast hit that will last for 2 seconds
             }
 
-            TestEnemy tempEnemy = hit.transform.GetComponent<TestEnemy>();
+            Enemy tempEnemy = hit.transform.GetComponent<Enemy>();
             GameObject ImpactGO;
 
             if (tempEnemy != null)// If an enemy is hit
             {
                 ImpactGO = Instantiate(EnemyImpactEffect, hit.point, Quaternion.LookRotation(hit.normal));
-                tempEnemy.takeDamage((Damage + SkillManager.damageBoost)/NumberOfProjectiles);
-                UIManager.updateScore(1);
+                tempEnemy.takeDamage((Damage + sm.damageBoost)/NumberOfProjectiles);
+                uim.updateScore(1);
             }
             else // If something other than an enemy if hit
             {
@@ -440,11 +479,14 @@ public class Weapon : MonoBehaviour
             weaponSound = Barrel.GetComponent<Barrel>().weaponSound;
             Barrel.SetActive(true);
             BarrelAlt1.SetActive(false);
-            if (UIManager.BarrelCycler != null)
+            if(uim != null)
             {
-                if (UIManager.BarrelCycler.activeInHierarchy)
+                if (uim.BarrelCycler != null)
                 {
-                    UIManager.updateBarrekCyclerPOS(Barrel.transform.position);
+                    if (uim.BarrelCycler.activeInHierarchy)
+                    {
+                        uim.updateBarrekCyclerPOS(Barrel.transform.position);
+                    }
                 }
             }
         }
@@ -454,11 +496,11 @@ public class Weapon : MonoBehaviour
             weaponSound = BarrelAlt1.GetComponent<Barrel>().weaponSound;
             BarrelAlt1.SetActive(true);
             Barrel.SetActive(false);
-            if (UIManager.BarrelCycler != null)
+            if (uim.BarrelCycler != null)
             {
-                if (UIManager.BarrelCycler.activeInHierarchy)
+                if (uim.BarrelCycler.activeInHierarchy)
                 {
-                    UIManager.updateBarrekCyclerPOS(BarrelAlt1.transform.position);
+                    uim.updateBarrekCyclerPOS(BarrelAlt1.transform.position);
                 }
             }
         }
@@ -472,11 +514,11 @@ public class Weapon : MonoBehaviour
         {
             Grip.SetActive(true);
             GripAlt1.SetActive(false);
-            if (UIManager.BarrelCycler != null)
+            if (uim.BarrelCycler != null)
             {
-                if (UIManager.GripCycler.activeInHierarchy)
+                if (uim.GripCycler.activeInHierarchy)
                 {
-                    UIManager.updateGripCyclerPOS(Grip.transform.position);
+                    uim.updateGripCyclerPOS(Grip.transform.position);
                 }
             }
         }
@@ -484,11 +526,11 @@ public class Weapon : MonoBehaviour
         {
             GripAlt1.SetActive(true);
             Grip.SetActive(false);
-            if (UIManager.BarrelCycler != null)
+            if (uim.BarrelCycler != null)
             {
-                if (UIManager.GripCycler.activeInHierarchy)
+                if (uim.GripCycler.activeInHierarchy)
                 {
-                    UIManager.updateGripCyclerPOS(GripAlt1.transform.position);
+                    uim.updateGripCyclerPOS(GripAlt1.transform.position);
                 }
             }
         }
